@@ -1,17 +1,17 @@
+import { PhaserGame } from "./game/PhaserGame";
+
 export function App() {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        width: "100vw",
         height: "100vh",
-        fontFamily: "system-ui, sans-serif",
+        position: "relative",
         background: "#0a0a0a",
-        color: "#e0e0e0",
+        overflow: "hidden",
       }}
     >
-      <h1>Vibe Client</h1>
+      <PhaserGame />
     </div>
   );
 }
