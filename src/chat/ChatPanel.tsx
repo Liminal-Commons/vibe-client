@@ -20,6 +20,7 @@ export interface ChatPanelProps {
 export function ChatPanel({ onSend }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const messages = useVibeStore((s) => s.chatMessages);
   const currentZoneId = useVibeStore((s) => s.currentZoneId);
 
@@ -29,6 +30,19 @@ export function ChatPanel({ onSend }: ChatPanelProps) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // Block keyboard events from reaching Phaser's window-level listener
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const stop = (e: Event) => e.stopPropagation();
+    el.addEventListener("keydown", stop);
+    el.addEventListener("keyup", stop);
+    return () => {
+      el.removeEventListener("keydown", stop);
+      el.removeEventListener("keyup", stop);
+    };
+  }, []);
 
   function handleSend() {
     const trimmed = input.trim();
@@ -56,6 +70,7 @@ export function ChatPanel({ onSend }: ChatPanelProps) {
       </div>
       <div style={inputContainerStyle}>
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
