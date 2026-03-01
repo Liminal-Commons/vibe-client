@@ -60,6 +60,10 @@ export interface VibeStore {
   addChatMessage: (msg: ChatMessageState) => void;
   currentZoneId: string | null;
   setCurrentZoneId: (zoneId: string | null) => void;
+
+  // Microphone
+  micMuted: boolean;
+  setMicMuted: (muted: boolean) => void;
 }
 
 export const useVibeStore = create<VibeStore>((set) => ({
@@ -106,4 +110,8 @@ export const useVibeStore = create<VibeStore>((set) => ({
     })),
   currentZoneId: null,
   setCurrentZoneId: (zoneId) => set({ currentZoneId: zoneId }),
+
+  // Microphone
+  micMuted: true,
+  setMicMuted: (muted) => set({ micMuted: muted }),
 }));

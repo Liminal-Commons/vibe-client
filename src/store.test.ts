@@ -12,6 +12,7 @@ describe("VibeStore", () => {
       connected: false,
       chatMessages: [],
       currentZoneId: null,
+      micMuted: true,
     });
   });
 
