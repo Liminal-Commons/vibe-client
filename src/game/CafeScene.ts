@@ -1,12 +1,14 @@
 /**
  * Main Phaser scene for the spatial environment.
  * Renders avatars as circles, handles WASD/arrow movement,
- * throttles position updates, and lerps remote avatars.
+ * throttles position updates, lerps remote avatars,
+ * and detects zone transitions.
  */
 
 import Phaser from "phaser";
 import { createThrottleState, shouldSendUpdate, markSent, type ThrottleState } from "./throttle";
 import { createLerpTarget, lerpPosition, type LerpTarget } from "./lerp";
+import { findZoneAtPosition, detectZoneTransition, type ZoneBounds } from "./zones";
 
 const SCENE_WIDTH = 1600;
 const SCENE_HEIGHT = 1200;
@@ -14,6 +16,28 @@ const AVATAR_RADIUS = 24;
 const MOVE_SPEED = 200; // pixels per second
 const UPDATE_INTERVAL_MS = 100; // 10 Hz
 const LERP_DURATION_MS = 120; // slightly longer than update interval for smooth interpolation
+
+/** Default zone layout for the Vibe Cafe */
+const DEFAULT_ZONES: ZoneBounds[] = [
+  {
+    id: "floor",
+    name: "The Floor",
+    x: 0,
+    y: 0,
+    width: SCENE_WIDTH,
+    height: SCENE_HEIGHT,
+    color: 0x2a1f14,
+  },
+  {
+    id: "talk-area",
+    name: "Talk Area",
+    x: 500,
+    y: 400,
+    width: 600,
+    height: 400,
+    color: 0x3a4f3a,
+  },
+];
 
 export interface RemotePeer {
   userId: string;
@@ -25,6 +49,8 @@ export interface RemotePeer {
 
 export interface CafeSceneCallbacks {
   onPositionUpdate: (x: number, y: number) => void;
+  onZoneEnter?: (zoneId: string) => void;
+  onZoneLeave?: (zoneId: string) => void;
 }
 
 export class CafeScene extends Phaser.Scene {
@@ -35,6 +61,8 @@ export class CafeScene extends Phaser.Scene {
   private lerpTargets = new Map<string, LerpTarget>();
   private throttleState: ThrottleState = createThrottleState();
   private callbacks: CafeSceneCallbacks;
+  private currentZoneId: string | null = null;
+  private zoneBounds: ZoneBounds[] = DEFAULT_ZONES;
 
   // Local position (synced to store externally)
   localX = 400;
@@ -47,11 +75,11 @@ export class CafeScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Background — simple gradient floor
+    // Background — simple floor
     const bg = this.add.graphics();
     bg.fillStyle(0x2a1f14, 1);
     bg.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
-    // Add some floor texture lines
+    // Floor grid lines
     bg.lineStyle(1, 0x3a2f24, 0.3);
     for (let x = 0; x < SCENE_WIDTH; x += 40) {
       bg.lineBetween(x, 0, x, SCENE_HEIGHT);
@@ -59,6 +87,9 @@ export class CafeScene extends Phaser.Scene {
     for (let y = 0; y < SCENE_HEIGHT; y += 40) {
       bg.lineBetween(0, y, SCENE_WIDTH, y);
     }
+
+    // Render zone boundaries
+    this.renderZones();
 
     // World bounds
     this.physics.world.setBounds(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
@@ -84,6 +115,13 @@ export class CafeScene extends Phaser.Scene {
     this.handleMovement(delta);
     this.updateRemoteAvatars();
     this.checkPositionUpdate();
+    this.checkZoneTransition();
+  }
+
+  /** Set zone layout (called from React when space data loads) */
+  setZones(zones: ZoneBounds[]): void {
+    this.zoneBounds = zones;
+    this.renderZones();
   }
 
   /** Update a remote peer's target position (called from React) */
@@ -119,6 +157,33 @@ export class CafeScene extends Phaser.Scene {
       avatar.destroy();
       this.remoteAvatars.delete(userId);
       this.lerpTargets.delete(userId);
+    }
+  }
+
+  private renderZones(): void {
+    // Skip the first zone (full floor) — render only sub-zones
+    for (let i = 1; i < this.zoneBounds.length; i++) {
+      const zone = this.zoneBounds[i]!;
+      const g = this.add.graphics();
+
+      // Semi-transparent fill
+      g.fillStyle(zone.color, 0.2);
+      g.fillRect(zone.x, zone.y, zone.width, zone.height);
+
+      // Border
+      g.lineStyle(2, zone.color, 0.6);
+      g.strokeRect(zone.x, zone.y, zone.width, zone.height);
+
+      // Label
+      this.add
+        .text(zone.x + zone.width / 2, zone.y + 12, zone.name, {
+          fontSize: "16px",
+          color: "#ffffff",
+          fontFamily: "sans-serif",
+          align: "center",
+        })
+        .setOrigin(0.5, 0)
+        .setAlpha(0.7);
     }
   }
 
@@ -195,6 +260,20 @@ export class CafeScene extends Phaser.Scene {
     if (shouldSendUpdate(this.throttleState, x, y, now, UPDATE_INTERVAL_MS)) {
       markSent(this.throttleState, x, y, now);
       this.callbacks.onPositionUpdate(x, y);
+    }
+  }
+
+  private checkZoneTransition(): void {
+    // Check innermost zone (last match wins — sub-zones override parent)
+    const zones = [...this.zoneBounds].reverse();
+    const zone = findZoneAtPosition(this.localX, this.localY, zones);
+    const newZoneId = zone?.id ?? null;
+
+    const { entered, left } = detectZoneTransition(this.currentZoneId, newZoneId);
+    if (entered || left) {
+      this.currentZoneId = newZoneId;
+      if (left) this.callbacks.onZoneLeave?.(left);
+      if (entered) this.callbacks.onZoneEnter?.(entered);
     }
   }
 }
