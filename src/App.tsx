@@ -2,14 +2,36 @@ import { useCallback } from "react";
 import { PhaserGame } from "./game/PhaserGame";
 import { ChatPanel } from "./chat/ChatPanel";
 import { MicToggle } from "./audio/MicToggle";
+import { useVibeConnection } from "./useVibeConnection";
+
+const DEFAULT_SPACE_ID = "lobby";
 
 export function App() {
-  const handleChatSend = useCallback((_text: string) => {
-    // Will be wired to WebSocket in a later story
-  }, []);
+  const { sendChat, sendPosition, sendZoneJoin, sendZoneLeave } = useVibeConnection();
+
+  const handlePositionUpdate = useCallback(
+    (x: number, y: number) => {
+      sendPosition(x, y);
+    },
+    [sendPosition],
+  );
+
+  const handleZoneEnter = useCallback(
+    (zoneId: string) => {
+      sendZoneJoin(DEFAULT_SPACE_ID, zoneId);
+    },
+    [sendZoneJoin],
+  );
+
+  const handleZoneLeave = useCallback(
+    (zoneId: string) => {
+      sendZoneLeave(DEFAULT_SPACE_ID, zoneId);
+    },
+    [sendZoneLeave],
+  );
 
   const handleMicToggle = useCallback((_muted: boolean) => {
-    // Will start/stop MediaRecorder when wired to WebSocket
+    // Will start/stop MediaRecorder when audio pipeline is wired
   }, []);
 
   return (
@@ -22,8 +44,12 @@ export function App() {
         overflow: "hidden",
       }}
     >
-      <PhaserGame />
-      <ChatPanel onSend={handleChatSend} />
+      <PhaserGame
+        onPositionUpdate={handlePositionUpdate}
+        onZoneEnter={handleZoneEnter}
+        onZoneLeave={handleZoneLeave}
+      />
+      <ChatPanel onSend={sendChat} />
       <MicToggle onToggle={handleMicToggle} />
     </div>
   );

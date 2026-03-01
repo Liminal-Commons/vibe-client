@@ -11,9 +11,13 @@ import { useVibeStore } from "../store";
 export interface PhaserGameProps {
   /** Callback when local player position changes */
   onPositionUpdate?: (x: number, y: number) => void;
+  /** Callback when player enters a zone */
+  onZoneEnter?: (zoneId: string) => void;
+  /** Callback when player leaves a zone */
+  onZoneLeave?: (zoneId: string) => void;
 }
 
-export function PhaserGame({ onPositionUpdate }: PhaserGameProps) {
+export function PhaserGame({ onPositionUpdate, onZoneEnter, onZoneLeave }: PhaserGameProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<CafeScene | null>(null);
@@ -29,9 +33,11 @@ export function PhaserGame({ onPositionUpdate }: PhaserGameProps) {
       },
       onZoneEnter: (zoneId) => {
         useVibeStore.getState().setCurrentZoneId(zoneId);
+        onZoneEnter?.(zoneId);
       },
-      onZoneLeave: () => {
+      onZoneLeave: (zoneId) => {
         useVibeStore.getState().setCurrentZoneId(null);
+        onZoneLeave?.(zoneId);
       },
     });
     sceneRef.current = scene;
