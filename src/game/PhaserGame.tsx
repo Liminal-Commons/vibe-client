@@ -27,6 +27,12 @@ export function PhaserGame({ onPositionUpdate }: PhaserGameProps) {
         useVibeStore.getState().setPosition(x, y);
         onPositionUpdate?.(x, y);
       },
+      onZoneEnter: (zoneId) => {
+        useVibeStore.getState().setCurrentZoneId(zoneId);
+      },
+      onZoneLeave: () => {
+        useVibeStore.getState().setCurrentZoneId(null);
+      },
     });
     sceneRef.current = scene;
 

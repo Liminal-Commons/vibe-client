@@ -24,6 +24,17 @@ export interface IdentityState {
   sessionToken: string | null;
 }
 
+/** A chat message in the history */
+export interface ChatMessageState {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: number;
+}
+
+const MAX_CHAT_MESSAGES = 100;
+
 export interface VibeStore {
   // Identity
   identity: IdentityState;
@@ -43,6 +54,12 @@ export interface VibeStore {
   // Connection
   connected: boolean;
   setConnected: (connected: boolean) => void;
+
+  // Chat
+  chatMessages: ChatMessageState[];
+  addChatMessage: (msg: ChatMessageState) => void;
+  currentZoneId: string | null;
+  setCurrentZoneId: (zoneId: string | null) => void;
 }
 
 export const useVibeStore = create<VibeStore>((set) => ({
@@ -80,4 +97,13 @@ export const useVibeStore = create<VibeStore>((set) => ({
   // Connection
   connected: false,
   setConnected: (connected) => set({ connected }),
+
+  // Chat
+  chatMessages: [],
+  addChatMessage: (msg) =>
+    set((state) => ({
+      chatMessages: [...state.chatMessages, msg].slice(-MAX_CHAT_MESSAGES),
+    })),
+  currentZoneId: null,
+  setCurrentZoneId: (zoneId) => set({ currentZoneId: zoneId }),
 }));

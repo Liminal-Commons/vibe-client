@@ -10,6 +10,8 @@ describe("VibeStore", () => {
       y: 300,
       peers: new Map(),
       connected: false,
+      chatMessages: [],
+      currentZoneId: null,
     });
   });
 
@@ -107,6 +109,43 @@ describe("VibeStore", () => {
     it("sets connected state", () => {
       useVibeStore.getState().setConnected(true);
       expect(useVibeStore.getState().connected).toBe(true);
+    });
+  });
+
+  describe("chat", () => {
+    const makeMsg = (id: string, text: string) => ({
+      id,
+      senderId: "sender-1",
+      senderName: "Alice",
+      text,
+      timestamp: Date.now(),
+    });
+
+    it("starts with empty chat messages", () => {
+      expect(useVibeStore.getState().chatMessages).toEqual([]);
+    });
+
+    it("adds a chat message", () => {
+      useVibeStore.getState().addChatMessage(makeMsg("1", "hello"));
+      expect(useVibeStore.getState().chatMessages).toHaveLength(1);
+      expect(useVibeStore.getState().chatMessages[0]?.text).toBe("hello");
+    });
+
+    it("limits chat history to 100 messages", () => {
+      for (let i = 0; i < 110; i++) {
+        useVibeStore.getState().addChatMessage(makeMsg(`${i}`, `msg-${i}`));
+      }
+      const messages = useVibeStore.getState().chatMessages;
+      expect(messages).toHaveLength(100);
+      // First message should be msg-10 (oldest 10 dropped)
+      expect(messages[0]?.text).toBe("msg-10");
+      expect(messages[99]?.text).toBe("msg-109");
+    });
+
+    it("tracks current zone", () => {
+      expect(useVibeStore.getState().currentZoneId).toBeNull();
+      useVibeStore.getState().setCurrentZoneId("zone-1");
+      expect(useVibeStore.getState().currentZoneId).toBe("zone-1");
     });
   });
 });

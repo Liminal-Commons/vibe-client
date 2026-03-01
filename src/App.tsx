@@ -1,6 +1,12 @@
+import { useCallback } from "react";
 import { PhaserGame } from "./game/PhaserGame";
+import { ChatPanel } from "./chat/ChatPanel";
 
 export function App() {
+  const handleChatSend = useCallback((_text: string) => {
+    // Will be wired to WebSocket in a later story
+  }, []);
+
   return (
     <div
       style={{
@@ -12,6 +18,7 @@ export function App() {
       }}
     >
       <PhaserGame />
+      <ChatPanel onSend={handleChatSend} />
     </div>
   );
 }
