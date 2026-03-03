@@ -5,13 +5,13 @@ WORKDIR /app
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
-# Install dependencies
-COPY package.json pnpm-lock.yaml ./
+# Install dependencies (staging-root-relative paths)
+COPY vibe-client/package.json vibe-client/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod=false --ignore-scripts
 
 # Copy source and build
-COPY tsconfig.json vite.config.ts index.html ./
-COPY src/ src/
+COPY vibe-client/tsconfig.json vibe-client/vite.config.ts vibe-client/vite-env.d.ts vibe-client/index.html ./
+COPY vibe-client/src/ src/
 RUN pnpm run build
 
 # Production stage — nginx serves static files
@@ -20,8 +20,8 @@ FROM nginx:alpine
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Nginx config for SPA routing (all routes → index.html)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Nginx config for SPA routing (all routes -> index.html)
+COPY vibe-client/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
