@@ -41,13 +41,13 @@ pnpm audit --audit-level=high
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/App.tsx` | Root component |
-| `src/main.tsx` | Entry point |
+| File               | Purpose               |
+| ------------------ | --------------------- |
+| `src/App.tsx`      | Root component        |
+| `src/main.tsx`     | Entry point           |
 | `eslint.config.js` | ESLint 10 flat config |
-| `vitest.config.ts` | Test config (jsdom) |
-| `vite.config.ts` | Build + dev server |
+| `vitest.config.ts` | Test config (jsdom)   |
+| `vite.config.ts`   | Build + dev server    |
 
 ## Development
 

@@ -29,7 +29,7 @@ export function useVibeConnection(): VibeConnection {
 
   useEffect(() => {
     const store = useVibeStore.getState();
-    const displayName = store.identity.displayName || "Anonymous";
+    const displayName = store.identity.displayName;
 
     const socket = createVibeSocket({
       url: WS_URL,
@@ -65,6 +65,11 @@ export function useVibeConnection(): VibeConnection {
 
     // Handle presence updates from other peers
     socket.on<PresenceMessage>("presence", (msg) => {
+      // Sentinel: x=-1, y=-1 means peer departed
+      if (msg.x === -1 && msg.y === -1) {
+        useVibeStore.getState().removePeer(msg.userId);
+        return;
+      }
       useVibeStore.getState().updatePeer({
         userId: msg.userId,
         displayName: msg.displayName,

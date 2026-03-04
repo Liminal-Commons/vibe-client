@@ -5,6 +5,33 @@
 
 import { create } from "zustand";
 
+const STORAGE_KEY = "vibe-identity";
+const SCHEMA_VERSION = 2;
+
+function loadIdentity(): { displayName: string; sessionToken: string | null } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (parsed.v !== SCHEMA_VERSION) {
+        localStorage.removeItem(STORAGE_KEY);
+        return { displayName: "", sessionToken: null };
+      }
+      return {
+        displayName: typeof parsed.displayName === "string" ? parsed.displayName : "",
+        sessionToken: typeof parsed.sessionToken === "string" ? parsed.sessionToken : null,
+      };
+    }
+  } catch { /* ignore corrupt storage */ }
+  return { displayName: "", sessionToken: null };
+}
+
+function saveIdentity(displayName: string, sessionToken: string | null) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: SCHEMA_VERSION, displayName, sessionToken }));
+  } catch { /* storage full or blocked */ }
+}
+
 /** A remote peer's state */
 export interface PeerState {
   userId: string;
@@ -66,17 +93,23 @@ export interface VibeStore {
   setMicMuted: (muted: boolean) => void;
 }
 
-export const useVibeStore = create<VibeStore>((set) => ({
-  // Identity
-  identity: { displayName: "", photo: null, sessionToken: null },
-  setIdentity: (displayName, photo) =>
+const saved = loadIdentity();
+
+export const useVibeStore = create<VibeStore>((set, get) => ({
+  // Identity (restored from localStorage)
+  identity: { displayName: saved.displayName, photo: null, sessionToken: saved.sessionToken },
+  setIdentity: (displayName, photo) => {
     set((state) => ({
       identity: { ...state.identity, displayName, photo },
-    })),
-  setSessionToken: (token) =>
+    }));
+    saveIdentity(displayName, get().identity.sessionToken);
+  },
+  setSessionToken: (token) => {
     set((state) => ({
       identity: { ...state.identity, sessionToken: token },
-    })),
+    }));
+    saveIdentity(get().identity.displayName, token);
+  },
 
   // Local position (center of a 800x600 default scene)
   x: 400,

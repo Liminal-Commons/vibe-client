@@ -31,17 +31,16 @@ export function ChatPanel({ onSend }: ChatPanelProps) {
     }
   }, [messages]);
 
-  // Block keyboard events from reaching Phaser's window-level listener
+  // Blur chat input when clicking outside (return focus to map)
   useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    const stop = (e: Event) => e.stopPropagation();
-    el.addEventListener("keydown", stop);
-    el.addEventListener("keyup", stop);
-    return () => {
-      el.removeEventListener("keydown", stop);
-      el.removeEventListener("keyup", stop);
+    const handleClick = (e: MouseEvent) => {
+      const panel = inputRef.current?.closest("[data-chat-panel]");
+      if (panel && !panel.contains(e.target as Node)) {
+        inputRef.current?.blur();
+      }
     };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   function handleSend() {
@@ -59,7 +58,7 @@ export function ChatPanel({ onSend }: ChatPanelProps) {
   }
 
   return (
-    <div style={panelStyle}>
+    <div style={panelStyle} data-chat-panel>
       <div style={headerStyle}>{currentZoneId ? `Chat — ${currentZoneId}` : "Chat"}</div>
       <div style={messagesContainerStyle}>
         {messages.length === 0 && <div style={emptyStyle}>No messages yet</div>}

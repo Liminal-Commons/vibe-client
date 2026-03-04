@@ -3,6 +3,7 @@ import { useVibeStore } from "./store";
 
 describe("VibeStore", () => {
   beforeEach(() => {
+    localStorage.clear();
     // Reset store between tests
     useVibeStore.setState({
       identity: { displayName: "", photo: null, sessionToken: null },
@@ -36,6 +37,19 @@ describe("VibeStore", () => {
       expect(identity.displayName).toBe("Alice");
       expect(identity.photo).toBe("photo.png");
       expect(identity.sessionToken).toBe("token-123");
+    });
+
+    it("persists identity to localStorage on setIdentity", () => {
+      useVibeStore.getState().setIdentity("Alice", null);
+      const stored = JSON.parse(localStorage.getItem("vibe-identity")!);
+      expect(stored.displayName).toBe("Alice");
+    });
+
+    it("persists session token to localStorage on setSessionToken", () => {
+      useVibeStore.getState().setIdentity("Alice", null);
+      useVibeStore.getState().setSessionToken("tok-abc");
+      const stored = JSON.parse(localStorage.getItem("vibe-identity")!);
+      expect(stored.sessionToken).toBe("tok-abc");
     });
   });
 

@@ -2,11 +2,13 @@ import { useCallback } from "react";
 import { PhaserGame } from "./game/PhaserGame";
 import { ChatPanel } from "./chat/ChatPanel";
 import { MicToggle } from "./audio/MicToggle";
+import { NamePrompt } from "./NamePrompt";
 import { useVibeConnection } from "./useVibeConnection";
+import { useVibeStore } from "./store";
 
 const DEFAULT_SPACE_ID = "lobby";
 
-export function App() {
+function VibeGame() {
   const { sendChat, sendPosition, sendZoneJoin, sendZoneLeave } = useVibeConnection();
 
   const handlePositionUpdate = useCallback(
@@ -53,4 +55,14 @@ export function App() {
       <MicToggle onToggle={handleMicToggle} />
     </div>
   );
+}
+
+export function App() {
+  const displayName = useVibeStore((s) => s.identity.displayName);
+
+  if (!displayName) {
+    return <NamePrompt />;
+  }
+
+  return <VibeGame />;
 }

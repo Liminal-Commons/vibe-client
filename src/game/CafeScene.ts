@@ -214,6 +214,10 @@ export class CafeScene extends Phaser.Scene {
   private handleMovement(delta: number): void {
     if (!this.cursors || !this.wasd) return;
 
+    // Don't move avatar while typing in chat or other inputs
+    const active = document.activeElement;
+    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+
     const speed = (MOVE_SPEED * delta) / 1000;
     let dx = 0;
     let dy = 0;
